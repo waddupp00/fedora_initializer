@@ -1,0 +1,20 @@
+[/]
+arc-menu-placement='DTP'
+available-placement=[false, true, false]
+button-padding=3
+custom-hot-corner-cmd="sh -c 'notify-send \"$(date)\"'"
+custom-menu-button-icon='/usr/share/icons/Adwaita/scalable/actions/view-app-grid-symbolic.svg'
+custom-menu-button-icon-size=36.0
+distro-icon=1
+enable-custom-arc-menu=false
+enable-menu-button-arrow=false
+enable-standlone-runner-menu=false
+hot-corners='Default'
+menu-button-appearance='Icon'
+menu-button-icon='Custom_Icon'
+menu-button-position-offset=0
+menu-hotkey='Super_L'
+menu-layout='Elementary'
+override-hot-corners=false
+pinned-app-list=[]
+prefs-visible-page=0
