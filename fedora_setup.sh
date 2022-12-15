@@ -11,12 +11,13 @@ set -e
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command failed with exit code $?."' EXIT
 
-# Install extra repos and codecs, then update
+# Install extra repos and codecs, git, then update
 dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm -y
 dnf install https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm -y
 dnf group update core -y
 dnf install gstreamer1-plugins-{bad-\*,good-\*,base} gstreamer1-plugin-openh264 gstreamer1-libav --exclude=gstreamer1-plugins-bad-free-devel -y
 dnf install lame\* --exclude=lame-devel -y
+dnf install git -y
 dnf group upgrade --with-optional Multimedia -y
 dnf update -y
 
@@ -36,7 +37,7 @@ dnf install gnome-extensions-app -y
 dnf install gnome-tweaks -y
 
 # Install the GNOME extensions whose uuids are listed in the following array
-array=( no-overview@fthx dash-to-panel@jderose9.github.com  appindicatorsupport@rgcjonas.gmail.com arcmenu@arcmenu.com )
+array=( just-perfection-desktop@just-perfection dash-to-panel@jderose9.github.com appindicatorsupport@rgcjonas.gmail.com )
 do
     VERSION_TAG=$(curl -Lfs "https://extensions.gnome.org/extension-query/?search=${i}" | jq '.extensions[0] | .shell_version_map | map(.pk) | max')
     wget -O ${i}.zip "https://extensions.gnome.org/download-extension/${i}.shell-extension.zip?version_tag=$VERSION_TAG"
@@ -48,21 +49,24 @@ do
     rm ${EXTENSION_ID}.zip
 done
 
-# Import arc-menu-settings into arc-menu and dash-to-panel-settings into dash-to-panel
-dconf load /org/gnome/shell/extensions/arcmenu/ < arc-menu-settings
+# Import dash-to-panel-settings into dash-to-panel
 dconf load /org/gnome/shell/extensions/dash-to-panel/ < dash-to-panel-settings
 
-# Bring back minimize and maximize on window title bars
-gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
-
-# Disable the GNOME hot corner
+# Disable the hot corner
 gsettings set org.gnome.desktop.interface enable-hot-corners false
+
+# Bring back minimize and maximize on window title bars for all users
+gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
 
 # Tell Nauilus to let us type paths in the search bar
 gsettings set org.gnome.nautilus.preferences always-use-location-entry true
 
-# Install the posy-black cursor theme and the Papirus icon theme
-cp -r posy-black /usr/share/icons/
+# Get the posy cursor themes from github and install it
+git clone https://github.com/simtrami/posy-improved-cursor-linux
+cd posy-improved-cursor-linux
+./install.sh
+
+# Install the Papirus icon theme
 dnf install papirus-icon-theme -y
 
 # Change the cursor theme to posy-black and the icons theme to Papirus
@@ -77,9 +81,9 @@ gsettings set org.gnome.desktop.interface gtk-application-prefer-dark-theme true
 sudo dnf copr enable atim/cascadia-code-fonts -y && sudo dnf install cascadia-code-fonts -y
 gsettings set org.gnome.desktop.interface monospace-font-name 'Cascadia Mono 11'
 
-# Install zsh, git, and oh-my-zsh
-dnf install zsh git -y
-sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# Install zsh, and install oh-my-zsh unattended
+dnf install zsh -y
+sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
 # Change the shell to zsh and set the default shell to zsh
 chsh -s /bin/zsh
@@ -88,9 +92,8 @@ adduser -D -s /bin/zsh
 # Move the oh-my-zsh installation to /usr/share/oh-my-zsh
 sudo mv ~/.oh-my-zsh /usr/share/oh-my-zsh
 
-# Move into the dir and copy the zshrc template to zshrc (which will be the default for users)
-cd /usr/share/oh-my-zsh/
-cp templates/zshrc.zsh-template zshrc
+# Make the zshrc in this repo the default zshrc
+mv zshrc /usr/share/oh-my-zsh/zshrc
 
 # Nab the patch file from MarcinWieczorek's AUR Package and apply to the zshrc file
 wget https://aur.archlinux.org/cgit/aur.git/plain/0001-zshrc.patch\?h\=oh-my-zsh-git -O zshrc.patch && patch -p1 < zshrc.patch
@@ -110,7 +113,7 @@ echo "alias cls='clear'" >> /usr/share/oh-my-zsh/zshrc
 echo "alias zshconfig='nano ~/.zshrc'" >> /usr/share/oh-my-zsh/zshrc
 
 # Clone the zsh-syntax-highlighting repo and move it to the oh-my-zsh custom plugins folder in /usr/share
-git clone https://github.com/zsh-users/zsh-syntax-highlighting/ ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+git clone https://github.com/zsh-users/zsh-syntax-highlighting/ /usr/share/oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 
 # Enable the plugin using oh-my-zsh's plugin manager
 sed -i 's/plugins=(git)/plugins=(git zsh-syntax-highlighting)/g' /usr/share/oh-my-zsh/zshrc
